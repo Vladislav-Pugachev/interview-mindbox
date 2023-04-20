@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+   name: nginx-configmap
+   namespace: infra
+data:
+  index.html: |
+    <html>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <h1>Тестовое задание для mindbox</h1>
+    </br>

@@ -1,0 +1,37 @@
+- name: Config NAT
+  hosts: all
+  vars:
+    - ansible_ssh_host_key_checking: false
+  gather_facts: false
+
+  tasks:
+    - name: Enable Forward
+      ansible.posix.sysctl:
+        name: net.ipv4.ip_forward
+        value: 1
+        sysctl_set: yes
+        state: present
+        reload: yes
+      become: yes 
+    - name: configure MASQUERADE
+      ansible.builtin.iptables:
+        table: nat
+        source: 10.0.0.0/8
+        chain: POSTROUTING
+        jump: MASQUERADE
+      become: yes 
+    - name: forward kube port
+      ansible.builtin.iptables:
+        table: nat
+        chain: PREROUTING
+        in_interface: eth0
+        destination_port: 6443
+        protocol: tcp
+        jump: DNAT
+        to_destination: 10.0.0.254:6443
+      become: yes 
+    - name: save iptables
+      community.general.iptables_state:
+        state: saved
+        path: /etc/sysconfig/iptables
+      become: yes         

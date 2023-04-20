@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: scale-down
+spec:
+  schedule: "00 21 * * *"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: kubectl
+            image: bitnami/kubectl:latest
+            imagePullPolicy: IfNotPresent          
+            args: 
+              - scale
+              - deployment
+              - nginx
+              - --replicas=1
+          serviceAccountName: cron
+---
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: scale-up
+spec:
+  schedule: "00 08 * * *"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: kubectl
+            image: bitnami/kubectl:latest
+            imagePullPolicy: IfNotPresent
+            args: 
+              - scale
+              - deployment
+              - nginx
+              - --replicas=4
+          serviceAccountName: cron

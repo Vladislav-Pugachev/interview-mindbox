@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment # использование deployment позволит равномерно распределять поды между нодами в зависимости от ресурсов
+metadata:
+  name: nginx
+  labels:
+    name: nginx
+    namespace: infra
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      name: nginx
+  template:
+    metadata:
+      labels:
+        name: nginx
+        namespace: infra
+    spec:
+      initContainers: ### использование инит контейнейнера для соверщение предварительной подготовки пода перед стартом основного котейнера
+      - name: init-myservice
+        image: busybox:1.28
+        command: ["/bin/sh", "-c", "sleep 10"]           
+      containers:
+      - name: nginx
+        image: nginx:latest
+        readinessProbe:  # проверка контейнера перед подачей на него трафика с Service
+          httpGet:
+            path: /
+            port: 8081
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests: # запрос на выделение необходмых ресурсов для пода
+            memory: 128Mi 
+            cpu: 100m
+          limits: # верхняя граница которую может использовать под, например при первом старте
+            cpu: 1
+        ports:
+        - containerPort: 8081
+        volumeMounts:
+          - name: nginx-index-file
+            mountPath: /usr/share/nginx/html 
+          - name: nginx-conf
+            mountPath: /etc/nginx/nginx.conf
+            subPath: nginx.conf
+            readOnly: true            
+      volumes:
+        - name: nginx-index-file
+          configMap:
+            name: nginx-configmap
+        - name: nginx-conf
+          configMap:
+            name: nginx-conf
+            items:
+              - key: nginx.conf
+                path: nginx.conf            
